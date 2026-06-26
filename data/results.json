@@ -37,11 +37,11 @@
             "t2_score": ""
         },
         "I조": {
-            "status": "pending",
+            "status": "fail",
             "description": "세네갈 또는 이라크 대승만 아니면 OK",
-            "reason": "세네갈 vs 이라크 대기 중",
-            "t1_score": "",
-            "t2_score": ""
+            "reason": "대승 발생 (5:0)",
+            "t1_score": 5,
+            "t2_score": 0
         },
         "J조": {
             "status": "pending",
