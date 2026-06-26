@@ -101,8 +101,8 @@ def load_data():
 
 def main():
     st.title("킹갓우의 수")
-    st.markdown("한국 32강 경우의 수 총 정리")
-    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
+    st.markdown("### 한국 32강 경우의 수 총 정리")
+    st.markdown("#### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
     data = load_data()
 
     if not data:
