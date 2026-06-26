@@ -4,17 +4,14 @@ import os
 
 st.set_page_config(page_title="한국 32강 경우의 수 대시보드", page_icon="🇰🇷", layout="wide")
 
-# CSS: CSS Grid를 도입하고 모바일 화면(max-width: 768px)에 대한 반응형 디자인 적용
+# CSS: 모바일 반응형 및 대시보드 디자인
 st.markdown("""
 <style>
-    /* 1. 바탕이 되는 3x3 그리드 레이아웃 */
     .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 25px;
     }
-    
-    /* 2. 카드 기본 디자인 (PC 버전 - 크고 시원하게) */
     .scenario-card {
         position: relative;
         border: 3px solid rgba(128, 128, 128, 0.2);
@@ -43,7 +40,6 @@ st.markdown("""
         margin-bottom: 12px;
     }
     .team-name { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
-    .score-text { font-size: 38px; font-weight: 900; color: #e63946; margin: 0 8px; }
     .vs-text { font-size: 30px; font-weight: bold; color: #aaa; padding-top: 25px; }
     .overlay {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -57,39 +53,33 @@ st.markdown("""
     .card-reason { font-size: 26px; font-weight: 900; color: #007bff; z-index: 2; }
     div[data-testid="stMetricValue"] { font-size: 50px; font-weight: 900; }
 
-    /* 3. 모바일 반응형 디자인 (스마트폰에서 3x3 비율 강제 및 크기 축소) */
     @media (max-width: 768px) {
         .dashboard-grid { gap: 8px; }
-        .scenario-card { 
-            padding: 15px 5px; 
-            min-height: 180px; 
-            border-width: 2px; 
-            border-radius: 10px; 
-        }
+        .scenario-card { padding: 15px 5px; min-height: 180px; border-width: 2px; border-radius: 10px; }
         .flags-container { gap: 5px; margin: 10px 0 15px 0; }
         .flag-icon { width: 32px; height: 22px; margin-bottom: 4px; border-radius: 3px; }
         .team-name { font-size: 11px; letter-spacing: -0.5px; }
-        .score-text { font-size: 12px; margin: 0 2px; }
         .vs-text { font-size: 12px; padding-top: 10px; }
         .card-title { font-size: 18px; margin-bottom: 5px; }
         .card-desc { font-size: 10px; margin-bottom: 5px; line-height: 1.2; letter-spacing: -0.5px; }
-        .card-reason { font-size: 11px; line-height: 1.2; letter-spacing: -0.5px; }
-        .overlay { font-size: 130px; } /* X, O 마크 축소 */
-        div[data-testid="stMetricValue"] { font-size: 35px; } /* 상단 상황판 글씨도 축소 */
+        .card-reason { font-size: 12px; line-height: 1.2; letter-spacing: -0.5px; }
+        .overlay { font-size: 130px; }
+        div[data-testid="stMetricValue"] { font-size: 35px; }
     }
 </style>
 """, unsafe_allow_html=True)
 
+# 한국 시각 기준 경기 일정을 'time' 항목에 추가했습니다.
 GROUP_INFO = {
-    "D조": {"t1": "호주", "f1": "https://flagcdn.com/w80/au.png", "t2": "파라과이", "f2": "https://flagcdn.com/w80/py.png", "sep": "vs"},
-    "E조": {"t1": "에콰도르", "f1": "https://flagcdn.com/w80/ec.png", "t2": "퀴라소", "f2": "https://flagcdn.com/w80/cw.png", "sep": "&"},
-    "F조": {"t1": "일본", "f1": "https://flagcdn.com/w80/jp.png", "t2": "스웨덴", "f2": "https://flagcdn.com/w80/se.png", "sep": "vs"},
-    "G조": {"t1": "벨기에", "f1": "https://flagcdn.com/w80/be.png", "t2": "이집트", "f2": "https://flagcdn.com/w80/eg.png", "sep": "+"},
-    "H조": {"t1": "스페인", "f1": "https://flagcdn.com/w80/es.png", "t2": "사우디", "f2": "https://flagcdn.com/w80/sa.png", "sep": "+"},
-    "I조": {"t1": "세네갈", "f1": "https://flagcdn.com/w80/sn.png", "t2": "이라크", "f2": "https://flagcdn.com/w80/iq.png", "sep": "vs"},
-    "J조": {"t1": "오스트리아", "f1": "https://flagcdn.com/w80/at.png", "t2": "알제리", "f2": "https://flagcdn.com/w80/dz.png", "sep": "vs"},
-    "K조": {"t1": "콩고민주", "f1": "https://flagcdn.com/w80/cd.png", "t2": "우즈벡", "f2": "https://flagcdn.com/w80/uz.png", "sep": "vs"},
-    "L조": {"t1": "가나", "f1": "https://flagcdn.com/w80/gh.png", "t2": "크로아티아", "f2": "https://flagcdn.com/w80/hr.png", "sep": "vs"},
+    "D조": {"t1": "호주", "f1": "https://flagcdn.com/w80/au.png", "t2": "파라과이", "f2": "https://flagcdn.com/w80/py.png", "sep": "vs", "time": "6.26(금) 완료"},
+    "E조": {"t1": "에콰도르", "f1": "https://flagcdn.com/w80/ec.png", "t2": "퀴라소", "f2": "https://flagcdn.com/w80/cw.png", "sep": "&", "time": "6.26(금) 완료"},
+    "F조": {"t1": "일본", "f1": "https://flagcdn.com/w80/jp.png", "t2": "스웨덴", "f2": "https://flagcdn.com/w80/se.png", "sep": "vs", "time": "6.27(토) 오전 10:30"},
+    "G조": {"t1": "벨기에", "f1": "https://flagcdn.com/w80/be.png", "t2": "이집트", "f2": "https://flagcdn.com/w80/eg.png", "sep": "+", "time": "6.27(토) 오후 1:30"},
+    "H조": {"t1": "스페인", "f1": "https://flagcdn.com/w80/es.png", "t2": "사우디", "f2": "https://flagcdn.com/w80/sa.png", "sep": "+", "time": "6.27(토) 오전 11:30"},
+    "I조": {"t1": "세네갈", "f1": "https://flagcdn.com/w80/sn.png", "t2": "이라크", "f2": "https://flagcdn.com/w80/iq.png", "sep": "vs", "time": "6.27(토) 오전 6:30"},
+    "J조": {"t1": "오스트리아", "f1": "https://flagcdn.com/w80/at.png", "t2": "알제리", "f2": "https://flagcdn.com/w80/dz.png", "sep": "vs", "time": "6.28(일) 오후 1:30"},
+    "K조": {"t1": "콩고민주", "f1": "https://flagcdn.com/w80/cd.png", "t2": "우즈벡", "f2": "https://flagcdn.com/w80/uz.png", "sep": "vs", "time": "6.28(일) 오전 11:00"},
+    "L조": {"t1": "가나", "f1": "https://flagcdn.com/w80/gh.png", "t2": "크로아티아", "f2": "https://flagcdn.com/w80/hr.png", "sep": "vs", "time": "6.28(일) 오전 8:30"},
 }
 
 def load_data():
@@ -100,9 +90,8 @@ def load_data():
         return json.load(f)
 
 def main():
-    st.title("킹갓우의 수")
-    st.markdown("### 한국 32강 경우의 수 총 정리")
-    st.markdown("#### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
+    st.title("🇰🇷 한국 32강 경우의 수 총 정리")
+    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
     data = load_data()
 
     if not data:
@@ -119,19 +108,27 @@ def main():
     with col2:
         st.write("진출 달성률")
         st.progress(progress_value)
+
+    st.info(f"**🤖 상태 코멘트:** {data.get('ai_comment', '파이썬 로직 계산 완료.')}")
+    st.markdown("---")
+
     scenarios = data.get("scenarios", {})
     groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
 
-    # 기존 st.columns 로직을 폐기하고, CSS Grid Container 안에 9개의 카드를 집어넣습니다.
     grid_html = '<div class="dashboard-grid">'
 
     for group in groups:
         info = scenarios.get(group, {})
         status = info.get("status", "pending")
         desc = info.get("description", "경기 분석 대기 중")
-        reason = info.get("reason", "아직 데이터가 없습니다")
         
         g_info = GROUP_INFO[group]
+
+        # 🚨 [추가된 로직] 대기 중(pending)이면 백엔드 데이터 대신 일정을 덮어씌웁니다.
+        if status == "pending":
+            reason = f"⏳ {g_info['time']} 예정"
+        else:
+            reason = info.get("reason", "결과 확인 불가")
 
         overlay_html = ""
         if status == "success":
@@ -160,9 +157,8 @@ def main():
         """
         grid_html += card_html
 
-    grid_html += '</div>' # Grid Container 닫기
+    grid_html += '</div>'
 
-    # Streamlit 화면에 렌더링
     if hasattr(st, "html"):
         st.html(grid_html)
     else:
