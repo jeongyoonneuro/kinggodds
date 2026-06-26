@@ -1,0 +1,63 @@
+name: Auto Update World Cup Scenario
+
+on:
+  schedule:
+    # 6월 26일 (금) 경기 반영 크론잡 (UTC 기준)
+    - cron: '30 21 26 6 *'  # 한국 시각 6/27 06:30 (I조)
+    - cron: '30 1 27 6 *'   # 한국 시각 6/27 10:30 (F조)
+    - cron: '30 2 27 6 *'   # 한국 시각 6/27 11:30 (H조)
+    - cron: '30 4 27 6 *'   # 한국 시각 6/27 13:30 (G조)
+    
+    # 6월 27일 (토) 경기 반영 크론잡 (UTC 기준)
+    - cron: '30 23 27 6 *'  # 한국 시각 6/28 08:30 (L조)
+    - cron: '0 2 28 6 *'    # 한국 시각 6/28 11:00 (K조)
+    - cron: '30 4 28 6 *'   # 한국 시각 6/28 13:30 (J조)
+    
+  workflow_dispatch: # 수동 실행 버튼
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. GitHub 저장소의 코드를 체크아웃합니다.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. 파이썬 환경을 설정합니다.
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    # 3. 필요한 의존성 라이브러리를 설치합니다.
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # 4. 백엔드 AI 에이전트를 실행하여 최신 결과를 가져오고 Gemini로 분석합니다.
+    - name: Run AI Agent
+      env:
+        FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: python agent.py
+
+    # 5. 변경된 data/results.json 파일을 내 저장소에 자동으로 커밋하고 푸시합니다.
+    - name: Commit and Push if updated
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # 변경 사항이 있는지 확인 후 스테이징
+        git add data/results.json
+        
+        # 변경된 내용이 있을 때만 커밋 및 푸시 진행 (오류 방지)
+        if ! git diff --cached --quiet; then
+          git commit -m "🤖 봇: 최신 경기 결과 및 경우의 수 업데이트 (자동)"
+          git push
+        else
+          echo "변경 사항이 없어 커밋을 건너뜁니다."
+        fi
