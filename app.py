@@ -4,16 +4,23 @@ import os
 
 st.set_page_config(page_title="한국 32강 경우의 수 대시보드", page_icon="🇰🇷", layout="wide")
 
-# CSS: 폰트와 카드 크기를 기존 대비 2배 수준으로 대폭 상향 & 상황판 숫자 크기 확대
+# CSS: CSS Grid를 도입하고 모바일 화면(max-width: 768px)에 대한 반응형 디자인 적용
 st.markdown("""
 <style>
+    /* 1. 바탕이 되는 3x3 그리드 레이아웃 */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+    }
+    
+    /* 2. 카드 기본 디자인 (PC 버전 - 크고 시원하게) */
     .scenario-card {
         position: relative;
         border: 3px solid rgba(128, 128, 128, 0.2);
         border-radius: 16px;
         padding: 30px 15px;
         text-align: center;
-        margin-bottom: 25px;
         min-height: 420px;
         display: flex;
         flex-direction: column;
@@ -28,67 +35,47 @@ st.markdown("""
         gap: 20px;
         margin: 15px 0 25px 0;
     }
-    .flag-box {
-        text-align: center;
-        z-index: 2;
-    }
+    .flag-box { text-align: center; z-index: 2; }
     .flag-icon {
-        width: 120px;
-        height: 80px;
-        object-fit: cover;
-        border-radius: 6px;
+        width: 120px; height: 80px;
+        object-fit: cover; border-radius: 6px;
         box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         margin-bottom: 12px;
     }
-    .team-name {
-        font-size: 32px;
-        font-weight: 900;
-        letter-spacing: -1px;
-    }
-    .vs-text {
-        font-size: 30px;
-        font-weight: bold;
-        color: #aaa;
-        padding-top: 25px;
-    }
+    .team-name { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+    .score-text { font-size: 38px; font-weight: 900; color: #e63946; margin: 0 8px; }
+    .vs-text { font-size: 30px; font-weight: bold; color: #aaa; padding-top: 25px; }
     .overlay {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 400px;
-        font-family: 'Arial', sans-serif;
-        font-weight: 900;
-        pointer-events: none;
-        z-index: 10;
-        line-height: 1;
-        user-select: none;
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 400px; font-family: 'Arial', sans-serif; font-weight: 900;
+        pointer-events: none; z-index: 10; line-height: 1; user-select: none;
     }
     .overlay-fail { color: rgba(220, 53, 69, 0.5); }
     .overlay-success { color: rgba(40, 167, 69, 0.5); }
-    .card-title {
-        font-size: 38px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        z-index: 2;
-    }
-    .card-desc {
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 10px;
-        word-break: keep-all;
-        z-index: 2;
-        color: #444;
-    }
-    .card-reason {
-        font-size: 26px;
-        font-weight: 900;
-        color: #007bff;
-        z-index: 2;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 50px;
-        font-weight: 900;
+    .card-title { font-size: 38px; font-weight: 900; margin-bottom: 10px; z-index: 2; }
+    .card-desc { font-size: 24px; font-weight: 700; margin-bottom: 10px; word-break: keep-all; z-index: 2; color: #444; }
+    .card-reason { font-size: 26px; font-weight: 900; color: #007bff; z-index: 2; }
+    div[data-testid="stMetricValue"] { font-size: 50px; font-weight: 900; }
+
+    /* 3. 모바일 반응형 디자인 (스마트폰에서 3x3 비율 강제 및 크기 축소) */
+    @media (max-width: 768px) {
+        .dashboard-grid { gap: 8px; }
+        .scenario-card { 
+            padding: 15px 5px; 
+            min-height: 180px; 
+            border-width: 2px; 
+            border-radius: 10px; 
+        }
+        .flags-container { gap: 5px; margin: 10px 0 15px 0; }
+        .flag-icon { width: 32px; height: 22px; margin-bottom: 4px; border-radius: 3px; }
+        .team-name { font-size: 11px; letter-spacing: -0.5px; }
+        .score-text { font-size: 12px; margin: 0 2px; }
+        .vs-text { font-size: 12px; padding-top: 10px; }
+        .card-title { font-size: 18px; margin-bottom: 5px; }
+        .card-desc { font-size: 10px; margin-bottom: 5px; line-height: 1.2; letter-spacing: -0.5px; }
+        .card-reason { font-size: 11px; line-height: 1.2; letter-spacing: -0.5px; }
+        .overlay { font-size: 130px; } /* X, O 마크 축소 */
+        div[data-testid="stMetricValue"] { font-size: 35px; } /* 상단 상황판 글씨도 축소 */
     }
 </style>
 """, unsafe_allow_html=True)
@@ -138,44 +125,51 @@ def main():
     scenarios = data.get("scenarios", {})
     groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
 
-    for i in range(0, 9, 3):
-        cols = st.columns(3)
-        for j in range(3):
-            group = groups[i + j]
-            with cols[j]:
-                info = scenarios.get(group, {})
-                status = info.get("status", "pending")
-                desc = info.get("description", "경기 분석 대기 중")
-                reason = info.get("reason", "아직 데이터가 없습니다")
-                
-                g_info = GROUP_INFO[group]
+    # 기존 st.columns 로직을 폐기하고, CSS Grid Container 안에 9개의 카드를 집어넣습니다.
+    grid_html = '<div class="dashboard-grid">'
 
-                overlay_html = ""
-                if status == "success":
-                    overlay_html = '<div class="overlay overlay-success">O</div>'
-                elif status == "fail":
-                    overlay_html = '<div class="overlay overlay-fail">X</div>'
+    for group in groups:
+        info = scenarios.get(group, {})
+        status = info.get("status", "pending")
+        desc = info.get("description", "경기 분석 대기 중")
+        reason = info.get("reason", "아직 데이터가 없습니다")
+        
+        g_info = GROUP_INFO[group]
 
-                card_html = f"""<div class="scenario-card">{overlay_html}
-    <div class="card-title">{group}</div>
-    <div class="flags-container">
-        <div class="flag-box">
-            <img src="{g_info['f1']}" class="flag-icon">
-            <div class="team-name">{g_info['t1']}</div>
+        overlay_html = ""
+        if status == "success":
+            overlay_html = '<div class="overlay overlay-success">O</div>'
+        elif status == "fail":
+            overlay_html = '<div class="overlay overlay-fail">X</div>'
+
+        card_html = f"""
+        <div class="scenario-card">
+            {overlay_html}
+            <div class="card-title">{group}</div>
+            <div class="flags-container">
+                <div class="flag-box">
+                    <img src="{g_info['f1']}" class="flag-icon">
+                    <div class="team-name">{g_info['t1']}</div>
+                </div>
+                <div class="vs-text">{g_info['sep']}</div>
+                <div class="flag-box">
+                    <img src="{g_info['f2']}" class="flag-icon">
+                    <div class="team-name">{g_info['t2']}</div>
+                </div>
+            </div>
+            <div class="card-desc">{desc}</div>
+            <div class="card-reason">{reason}</div>
         </div>
-        <div class="vs-text">{g_info['sep']}</div>
-        <div class="flag-box">
-            <img src="{g_info['f2']}" class="flag-icon">
-            <div class="team-name">{g_info['t2']}</div>
-        </div>
-    </div>
-    <div class="card-desc">{desc}</div>
-    <div class="card-reason">{reason}</div>
-</div>"""
-                if hasattr(st, "html"):
-                    st.html(card_html)
-                else:
-                    st.markdown(card_html, unsafe_allow_html=True)
+        """
+        grid_html += card_html
+
+    grid_html += '</div>' # Grid Container 닫기
+
+    # Streamlit 화면에 렌더링
+    if hasattr(st, "html"):
+        st.html(grid_html)
+    else:
+        st.markdown(grid_html, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
