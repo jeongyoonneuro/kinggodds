@@ -1,86 +1,220 @@
 import os
 import json
 import requests
-import google.generativeai as genai
+import urllib3
 
-# 1. 환경 변수 설정 (GitHub Secrets 또는 로컬 .env에서 가져옴)
-FOOTBALL_API_KEY = os.environ.get("FOOTBALL_API_KEY")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
-genai.configure(api_key=GEMINI_API_KEY)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_football_results():
-    """API-Football에서 최신 경기 결과를 가져오는 함수"""
-    # 실제 API 호출 코드 예시 (주석 해제 후 사용)
-    # url = "https://v3.football.api-sports.io/fixtures?date=2026-06-26"
-    # headers = {
-    #     'x-apisports-key': FOOTBALL_API_KEY
-    # }
-    # response = requests.get(url, headers=headers)
-    # return response.json()
+    """worldcup26.ir API에서 데이터를 가져옵니다."""
+    url = "https://worldcup26.ir/get/games"
+    try:
+        response = requests.get(url, verify=False, timeout=10)
+        response.raise_for_status() 
+        return response.json()
+    except Exception as e:
+        print(f"❌ API 호출 중 오류 발생: {e}")
+        return []
 
-    # 당장 로컬 테스트를 위해 가짜(Mock) 데이터 반환
+def extract_match_info(raw_data, team1_name, team2_name=None):
+    """
+    worldcup26.ir API의 실제 JSON 구조에 맞춰 조별리그 3차전 점수를 추출합니다.
+    """
+    # 1. API 구조에 맞게 'games' 리스트 가져오기
+    data_list = raw_data.get("games", [])
+    
+    for match in data_list:
+        # 2. 날짜 대신 'matchday: 3' (조별리그 3차전) 인 경기만 타겟팅
+        if str(match.get("matchday")) != "3":
+            continue
+            
+        home_team = match.get("home_team_name_en", "")
+        away_team = match.get("away_team_name_en", "")
+        
+        # 3. 팀 이름(team1)이 홈 또는 어웨이에 있는지 확인
+        if team1_name.lower() in home_team.lower() or team1_name.lower() in away_team.lower():
+            
+            # team2 이름이 조건에 있다면, 상대팀이 맞는지 확인
+            if team2_name:
+                if team2_name.lower() not in home_team.lower() and team2_name.lower() not in away_team.lower():
+                    continue
+            
+            # 4. 경기 종료 여부 확인 (API 구조: 'finished' 필드가 'TRUE' 문자열임)
+            is_finished = str(match.get("finished", "")).upper() == "TRUE"
+            if not is_finished:
+                return {"status": "pending"}
+            
+            # 5. 점수 추출 (정수형으로 변환)
+            try:
+                h_score = int(match.get("home_score", 0))
+                a_score = int(match.get("away_score", 0))
+            except ValueError:
+                return {"status": "pending"}
+                
+            # team1이 홈인지 어웨이인지에 따라 점수 매핑 반환
+            if team1_name.lower() in home_team.lower():
+                return {"status": "finished", "team1_score": h_score, "team2_score": a_score}
+            else:
+                return {"status": "finished", "team1_score": a_score, "team2_score": h_score}
+                
+    return {"status": "pending"}  
+def evaluate_scenarios(match_data):
+    scenarios = {}
+    total_achieved = 0
+
+    # 코드 중복을 줄이고 점수까지 깔끔하게 저장하는 헬퍼 함수
+    def add_scenario(group, status, desc, reason, t1_score="", t2_score=""):
+        scenarios[group] = {
+            "status": status,
+            "description": desc,
+            "reason": reason,
+            "t1_score": t1_score,
+            "t2_score": t2_score
+        }
+
+    # 1. D조
+    d_match = extract_match_info(match_data, "Australia", "Paraguay")
+    t1_s, t2_s = d_match.get("team1_score", ""), d_match.get("team2_score", "")
+    if d_match["status"] == "pending":
+        add_scenario("D조", "pending", "호주 승리 또는 파라과이 2점차 이상 승리", "호주 vs 파라과이 대기 중")
+    else:
+        if t1_s > t2_s:
+            add_scenario("D조", "success", "호주 승리 또는 파라과이 2점차 이상 승리", f"호주 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        elif (t2_s - t1_s) >= 2:
+            add_scenario("D조", "success", "호주 승리 또는 파라과이 2점차 이상 승리", f"파라과이 대승 ({t2_s}:{t1_s})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            add_scenario("D조", "fail", "호주 승리 또는 파라과이 2점차 이상 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+
+    # 2. E조
+    ecu_match = extract_match_info(match_data, "Ecuador", "Germany")
+    cur_match = extract_match_info(match_data, "Cura", "Ivory Coast")
+    if ecu_match["status"] == "pending" or cur_match["status"] == "pending":
+        add_scenario("E조", "pending", "에콰도르, 퀴라소 승리 X", "독일전 및 코트디부아르전 대기 중")
+    else:
+        t1_s, t2_s = ecu_match["team1_score"], cur_match["team1_score"]
+        ecu_win = ecu_match["team1_score"] > ecu_match["team2_score"]
+        cur_win = cur_match["team1_score"] > cur_match["team2_score"]
+        if not ecu_win and not cur_win:
+            add_scenario("E조", "success", "에콰도르, 퀴라소 승리 X", f"조건 충족 (에콰도르 {ecu_match['team1_score']}:{ecu_match['team2_score']}, 퀴라소 {cur_match['team1_score']}:{cur_match['team2_score']})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            failed = []
+            if ecu_win: failed.append(f"에콰도르 승({ecu_match['team1_score']}:{ecu_match['team2_score']})")
+            if cur_win: failed.append(f"퀴라소 승({cur_match['team1_score']}:{cur_match['team2_score']})")
+            add_scenario("E조", "fail", "에콰도르, 퀴라소 승리 X", f"조건 미달성 [{', '.join(failed)}]", t1_s, t2_s)
+
+    # 3. F조
+    f_match = extract_match_info(match_data, "Japan", "Sweden")
+    t1_s, t2_s = f_match.get("team1_score", ""), f_match.get("team2_score", "")
+    if f_match["status"] == "pending":
+        add_scenario("F조", "pending", "일본, 스웨덴에 2골차 이상 승리", "일본 vs 스웨덴 대기 중")
+    else:
+        if (t1_s - t2_s) >= 2:
+            add_scenario("F조", "success", "일본, 스웨덴에 2골차 이상 승리", f"일본 대승 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            add_scenario("F조", "fail", "일본, 스웨덴에 2골차 이상 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+
+    # 4. G조
+    bel_match = extract_match_info(match_data, "Belgium", "New Zealand")
+    egy_match = extract_match_info(match_data, "Egypt", "Iran")
+    if bel_match["status"] == "pending" or egy_match["status"] == "pending":
+        add_scenario("G조", "pending", "벨기에 승리 + 이집트 승리", "뉴질랜드전 및 이란전 대기 중")
+    else:
+        t1_s, t2_s = bel_match["team1_score"], egy_match["team1_score"]
+        bel_win = bel_match["team1_score"] > bel_match["team2_score"]
+        egy_win = egy_match["team1_score"] > egy_match["team2_score"]
+        if bel_win and egy_win:
+            add_scenario("G조", "success", "벨기에 승리 + 이집트 승리", f"동반 승리 (벨기에 {bel_match['team1_score']}:{bel_match['team2_score']}, 이집트 {egy_match['team1_score']}:{egy_match['team2_score']})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            add_scenario("G조", "fail", "벨기에 승리 + 이집트 승리", f"동반 승리 실패 (벨기에 {bel_match['team1_score']}:{bel_match['team2_score']}, 이집트 {egy_match['team1_score']}:{egy_match['team2_score']})", t1_s, t2_s)
+
+    # 5. H조
+    esp_match = extract_match_info(match_data, "Spain", "Uruguay")
+    ksa_match = extract_match_info(match_data, "Saudi Arabia", "Cape Verde")
+    if esp_match["status"] == "pending" or ksa_match["status"] == "pending":
+         add_scenario("H조", "pending", "스페인 승리 + 사우디 승리", "우루과이전 및 카보베르데전 대기 중")
+    else:
+         t1_s, t2_s = esp_match["team1_score"], ksa_match["team1_score"]
+         esp_win = esp_match["team1_score"] > esp_match["team2_score"]
+         ksa_win = ksa_match["team1_score"] > ksa_match["team2_score"]
+         if esp_win and ksa_win:
+             add_scenario("H조", "success", "스페인 승리 + 사우디 승리", f"동반 승리 (스페인 {esp_match['team1_score']}:{esp_match['team2_score']}, 사우디 {ksa_match['team1_score']}:{ksa_match['team2_score']})", t1_s, t2_s)
+             total_achieved += 1
+         else:
+             add_scenario("H조", "fail", "스페인 승리 + 사우디 승리", f"동반 승리 실패 (스페인 {esp_match['team1_score']}:{esp_match['team2_score']}, 사우디 {ksa_match['team1_score']}:{ksa_match['team2_score']})", t1_s, t2_s)
+
+    # 6. I조
+    i_match = extract_match_info(match_data, "Senegal", "Iraq")
+    t1_s, t2_s = i_match.get("team1_score", ""), i_match.get("team2_score", "")
+    if i_match["status"] == "pending":
+        add_scenario("I조", "pending", "세네갈 또는 이라크 대승만 아니면 OK", "세네갈 vs 이라크 대기 중")
+    else:
+        if abs(t1_s - t2_s) <= 2:
+            add_scenario("I조", "success", "세네갈 또는 이라크 대승만 아니면 OK", f"대승 방어 성공 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            add_scenario("I조", "fail", "세네갈 또는 이라크 대승만 아니면 OK", f"대승 발생 ({t1_s}:{t2_s})", t1_s, t2_s)
+
+    # 7. J조
+    j_match = extract_match_info(match_data, "Austria", "Algeria")
+    t1_s, t2_s = j_match.get("team1_score", ""), j_match.get("team2_score", "")
+    if j_match["status"] == "pending":
+        add_scenario("J조", "pending", "오스트리아 승리", "오스트리아 vs 알제리 대기 중")
+    else:
+        if t1_s > t2_s:
+            add_scenario("J조", "success", "오스트리아 승리", f"오스트리아 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        else:
+            add_scenario("J조", "fail", "오스트리아 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+
+    # 8. K조
+    k_match = extract_match_info(match_data, "Congo", "Uzbekistan")
+    t1_s, t2_s = k_match.get("team1_score", ""), k_match.get("team2_score", "")
+    if k_match["status"] == "pending":
+         add_scenario("K조", "pending", "콩고민주공화국, 우즈벡전 무승부 또는 패배", "콩고민주 vs 우즈벡 대기 중")
+    else:
+         if t1_s <= t2_s:
+             add_scenario("K조", "success", "콩고민주공화국, 우즈벡전 무승부 또는 패배", f"조건 충족 ({t1_s}:{t2_s})", t1_s, t2_s)
+             total_achieved += 1
+         else:
+             add_scenario("K조", "fail", "콩고민주공화국, 우즈벡전 무승부 또는 패배", f"콩고 승리 발생 ({t1_s}:{t2_s})", t1_s, t2_s)
+
+    # 9. L조
+    l_match = extract_match_info(match_data, "Ghana", "Croatia")
+    t1_s, t2_s = l_match.get("team1_score", ""), l_match.get("team2_score", "")
+    if l_match["status"] == "pending":
+         add_scenario("L조", "pending", "가나 승리", "가나 vs 크로아티아 대기 중")
+    else:
+         if t1_s > t2_s:
+             add_scenario("L조", "success", "가나 승리", f"가나 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+             total_achieved += 1
+         else:
+             add_scenario("L조", "fail", "가나 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+
     return {
-        "matches": [
-            {"home": "호주", "away": "덴마크", "home_score": 2, "away_score": 1, "status": "FT"},
-            {"home": "에콰도르", "away": "세네갈", "home_score": 1, "away_score": 1, "status": "FT"}
-        ]
+        "total_achieved": total_achieved,
+        "scenarios": scenarios,
+        "ai_comment": f"각 조별 상대팀 매치업 검증 완료. 현재 총 {total_achieved}개의 조건이 달성되었습니다!"
     }
 
-def analyze_scenarios_with_gemini(match_data):
-    """Gemini API를 사용하여 경우의 수 달성 여부를 분석하는 함수"""
-    # 최신 모델 사용
-    model = genai.GenerativeModel('gemini-1.5-flash')
-
-    prompt = f"""
-    너는 축구 데이터 분석 전문가야.
-    아래 경기 결과를 바탕으로 한국의 32강 진출을 위한 9가지 조별 시나리오 달성 여부를 판단해줘.
-
-    [현재 경기 결과]
-    {json.dumps(match_data, ensure_ascii=False)}
-
-    [한국에 유리한 9가지 시나리오 (이 중 3개 이상 달성 시 진출)]
-    1. D조: 호주 승리 또는 파라과이 2점차 이상 승리
-    2. E조: 에콰도르, 퀴라소 승리 X
-    3. F조: 일본, 스웨덴에 2골차 이상 승리
-    4. G조: 벨기에 승리 + 이집트 승리
-    5. H조: 스페인 승리 + 사우디 승리
-    6. I조: 세네갈 또는 이라크 대승만 아니면 OK (3점차 이상 승리 금지)
-    7. J조: 오스트리아 승리
-    8. K조: 콩고민주공화국, 우즈벡전 무승부 또는 패배
-    9. L조: 가나 승리
-
-    반드시 아래 JSON 형식으로만 응답해. 마크다운(` ```json `) 없이 순수 JSON 텍스트만 출력해야 해.
-    {{
-        "total_achieved": 1,
-        "scenarios": {{
-            "D조": {{"status": "success", "description": "호주 승리 또는 파라과이 2점차 이상 승리", "reason": "호주가 2:1로 승리함"}},
-            "E조": {{"status": "pending", "description": "에콰도르, 퀴라소 승리 X", "reason": "아직 두 팀의 경기가 완전히 종료되지 않음"}},
-            "F조": {{"status": "pending", "description": "일본, 스웨덴에 2골차 이상 승리", "reason": "경기 전"}}
-        }},
-        "ai_comment": "D조 조건이 성공적으로 달성되었습니다! 남은 8개 중 2개만 더 맞으면 진출합니다."
-    }}
-    """
-
-    response = model.generate_content(prompt)
-    
-    # Gemini가 혹시라도 마크다운 텍스트를 붙여서 주면 제거하는 클렌징 작업
-    result_text = response.text.strip().replace("```json", "").replace("```", "")
-    return json.loads(result_text)
-
 def main():
-    print("⚽ [1/3] 경기 결과 수집 중...")
+    print("⚽ [1/3] API 경기 결과 수집 중...")
     match_data = get_football_results()
+    print(match_data)
 
-    print("🧠 [2/3] Gemini AI 분석 중...")
-    scenario_results = analyze_scenarios_with_gemini(match_data)
+    print("⚡ [2/3] 파이썬 로직 기반 경우의 수 계산 중 (0.01초)...")
+    scenario_results = evaluate_scenarios(match_data)
 
     print("💾 [3/3] 결과를 data/results.json에 저장 중...")
     os.makedirs("data", exist_ok=True)
     with open("data/results.json", "w", encoding="utf-8") as f:
         json.dump(scenario_results, f, ensure_ascii=False, indent=4)
 
-    print("✅ 데이터 업데이트 완료!")
+    print(f"✅ 즉각 업데이트 완료! (현재 달성: {scenario_results['total_achieved']}개)")
 
 if __name__ == "__main__":
     main()
