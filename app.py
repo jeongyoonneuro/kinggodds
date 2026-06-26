@@ -100,7 +100,8 @@ def load_data():
         return json.load(f)
 
 def main():
-    st.title("🇰🇷 한국 32강 경우의 수 총 정리")
+    st.title("킹갓우의 수")
+    st.markdown("한국 32강 경우의 수 총 정리")
     st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
     data = load_data()
 
@@ -118,10 +119,6 @@ def main():
     with col2:
         st.write("진출 달성률")
         st.progress(progress_value)
-
-    st.info(f"**🤖 상태 코멘트:** {data.get('ai_comment', '파이썬 로직 계산 완료.')}")
-    st.markdown("---")
-
     scenarios = data.get("scenarios", {})
     groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
 
