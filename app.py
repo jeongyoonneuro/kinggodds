@@ -4,7 +4,7 @@ import os
 
 st.set_page_config(page_title="한국 32강 경우의 수 대시보드", page_icon="🇰🇷", layout="wide")
 
-# CSS: 폰트와 카드 크기를 기존 대비 2배 수준으로 대폭 상향
+# CSS: 폰트와 카드 크기를 기존 대비 2배 수준으로 대폭 상향 & 상황판 숫자 크기 확대
 st.markdown("""
 <style>
     .scenario-card {
@@ -44,12 +44,6 @@ st.markdown("""
         font-size: 32px;
         font-weight: 900;
         letter-spacing: -1px;
-    }
-    .score-text {
-        font-size: 38px;
-        font-weight: 900;
-        color: #e63946; /* 강렬한 빨간색 점수 */
-        margin: 0 8px;
     }
     .vs-text {
         font-size: 30px;
@@ -92,6 +86,10 @@ st.markdown("""
         color: #007bff;
         z-index: 2;
     }
+    div[data-testid="stMetricValue"] {
+        font-size: 50px;
+        font-weight: 900;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -123,7 +121,20 @@ def main():
         st.warning("아직 수집된 경기 결과가 없습니다. 업데이트를 기다려주세요.")
         return
 
+    # 상단 요약 대시보드
+    total_achieved = data.get("total_achieved", 0)
+    progress_value = min(total_achieved / 3.0, 1.0)
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.metric(label="현재 달성된 경우의 수", value=f"{total_achieved} 개", delta=f"{3 - total_achieved}개 남음!" if total_achieved < 3 else "진출 확정!", delta_color="normal")
+    with col2:
+        st.write("진출 달성률")
+        st.progress(progress_value)
+
+    st.info(f"**🤖 상태 코멘트:** {data.get('ai_comment', '파이썬 로직 계산 완료.')}")
     st.markdown("---")
+
     scenarios = data.get("scenarios", {})
     groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
 
@@ -137,14 +148,6 @@ def main():
                 desc = info.get("description", "경기 분석 대기 중")
                 reason = info.get("reason", "아직 데이터가 없습니다")
                 
-                # 백엔드에서 넘어온 점수
-                t1_s = info.get("t1_score", "")
-                t2_s = info.get("t2_score", "")
-                
-                # 점수가 있을 때만 빨간색 숫자로 렌더링
-                score1_html = f'<span class="score-text">{t1_s}</span>' if str(t1_s) != "" else ""
-                score2_html = f'<span class="score-text">{t2_s}</span>' if str(t2_s) != "" else ""
-
                 g_info = GROUP_INFO[group]
 
                 overlay_html = ""
@@ -158,12 +161,12 @@ def main():
     <div class="flags-container">
         <div class="flag-box">
             <img src="{g_info['f1']}" class="flag-icon">
-            <div class="team-name">{g_info['t1']} {score1_html}</div>
+            <div class="team-name">{g_info['t1']}</div>
         </div>
         <div class="vs-text">{g_info['sep']}</div>
         <div class="flag-box">
             <img src="{g_info['f2']}" class="flag-icon">
-            <div class="team-name">{score2_html} {g_info['t2']}</div>
+            <div class="team-name">{g_info['t2']}</div>
         </div>
     </div>
     <div class="card-desc">{desc}</div>
