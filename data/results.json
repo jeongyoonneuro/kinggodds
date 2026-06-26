@@ -1,0 +1,69 @@
+{
+    "total_achieved": 0,
+    "scenarios": {
+        "D조": {
+            "status": "fail",
+            "description": "호주 승리 또는 파라과이 2점차 이상 승리",
+            "reason": "조건 미달성 (0:0)",
+            "t1_score": 0,
+            "t2_score": 0
+        },
+        "E조": {
+            "status": "fail",
+            "description": "에콰도르, 퀴라소 승리 X",
+            "reason": "조건 미달성 [에콰도르 승(2:1)]",
+            "t1_score": 2,
+            "t2_score": 0
+        },
+        "F조": {
+            "status": "fail",
+            "description": "일본, 스웨덴에 2골차 이상 승리",
+            "reason": "조건 미달성 (1:1)",
+            "t1_score": 1,
+            "t2_score": 1
+        },
+        "G조": {
+            "status": "pending",
+            "description": "벨기에 승리 + 이집트 승리",
+            "reason": "뉴질랜드전 및 이란전 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        },
+        "H조": {
+            "status": "pending",
+            "description": "스페인 승리 + 사우디 승리",
+            "reason": "우루과이전 및 카보베르데전 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        },
+        "I조": {
+            "status": "pending",
+            "description": "세네갈 또는 이라크 대승만 아니면 OK",
+            "reason": "세네갈 vs 이라크 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        },
+        "J조": {
+            "status": "pending",
+            "description": "오스트리아 승리",
+            "reason": "오스트리아 vs 알제리 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        },
+        "K조": {
+            "status": "pending",
+            "description": "콩고민주공화국, 우즈벡전 무승부 또는 패배",
+            "reason": "콩고민주 vs 우즈벡 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        },
+        "L조": {
+            "status": "pending",
+            "description": "가나 승리",
+            "reason": "가나 vs 크로아티아 대기 중",
+            "t1_score": "",
+            "t2_score": ""
+        }
+    },
+    "ai_comment": "각 조별 상대팀 매치업 검증 완료. 현재 총 0개의 조건이 달성되었습니다!"
+}
