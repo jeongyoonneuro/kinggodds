@@ -70,16 +70,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 한국 시각 기준 경기 일정을 'time' 항목에 추가했습니다.
+# 한국 시각 기준 경기 일정을 'time' 항목에 추가했습니다.
 GROUP_INFO = {
     "D조": {"t1": "호주", "f1": "https://flagcdn.com/w80/au.png", "t2": "파라과이", "f2": "https://flagcdn.com/w80/py.png", "sep": "vs", "time": "6.26(금) 완료"},
-    "E조": {"t1": "에콰도르", "f1": "https://flagcdn.com/w80/ec.png", "t2": "퀴라소", "f2": "https://flagcdn.com/w80/cw.png", "sep": "&", "time": "6.26(금) 완료"},
-    "F조": {"t1": "일본", "f1": "https://flagcdn.com/w80/jp.png", "t2": "스웨덴", "f2": "https://flagcdn.com/w80/se.png", "sep": "vs", "time": "6.27(토) 오전 10:30"},
-    "G조": {"t1": "벨기에", "f1": "https://flagcdn.com/w80/be.png", "t2": "이집트", "f2": "https://flagcdn.com/w80/eg.png", "sep": "+", "time": "6.27(토) 오후 1:30"},
-    "H조": {"t1": "스페인", "f1": "https://flagcdn.com/w80/es.png", "t2": "사우디", "f2": "https://flagcdn.com/w80/sa.png", "sep": "+", "time": "6.27(토) 오전 11:30"},
-    "I조": {"t1": "세네갈", "f1": "https://flagcdn.com/w80/sn.png", "t2": "이라크", "f2": "https://flagcdn.com/w80/iq.png", "sep": "vs", "time": "6.27(토) 오전 6:30"},
-    "J조": {"t1": "오스트리아", "f1": "https://flagcdn.com/w80/at.png", "t2": "알제리", "f2": "https://flagcdn.com/w80/dz.png", "sep": "vs", "time": "6.28(일) 오후 1:30"},
-    "K조": {"t1": "콩고민주", "f1": "https://flagcdn.com/w80/cd.png", "t2": "우즈벡", "f2": "https://flagcdn.com/w80/uz.png", "sep": "vs", "time": "6.28(일) 오전 11:00"},
-    "L조": {"t1": "가나", "f1": "https://flagcdn.com/w80/gh.png", "t2": "크로아티아", "f2": "https://flagcdn.com/w80/hr.png", "sep": "vs", "time": "6.28(일) 오전 8:30"},
+    "E조": {"t1": "에콰도르", "f1": "https://flagcdn.com/w80/ec.png", "t2": "퀴라소", "f2": "https://flagcdn.com/w80/cw.png", "sep": "+", "time": "6.26(금) 완료"},
+    "F조": {"t1": "일본", "f1": "https://flagcdn.com/w80/jp.png", "t2": "스웨덴", "f2": "https://flagcdn.com/w80/se.png", "sep": "vs", "time": "6.26(금) 완료"},
+    
+    # 여기서부터 이미지에 맞춰 대진표와 시간이 수정되었습니다!
+    "G조": {"t1": "이집트", "f1": "https://flagcdn.com/w80/eg.png", "t2": "이란", "f2": "https://flagcdn.com/w80/ir.png", "sep": "vs", "time": "06.27(토) 12:00 (새벽)"},
+    "H조": {"t1": "스페인", "f1": "https://flagcdn.com/w80/es.png", "t2": "우루과이", "f2": "https://flagcdn.com/w80/uy.png", "sep": "vs", "time": "06.27(토) 09:00 (오전)"},
+    "I조": {"t1": "세네갈", "f1": "https://flagcdn.com/w80/sn.png", "t2": "이라크", "f2": "https://flagcdn.com/w80/iq.png", "sep": "vs", "time": "06.27(토) 04:00 (오전)"},
+    "J조": {"t1": "오스트리아", "f1": "https://flagcdn.com/w80/at.png", "t2": "알제리", "f2": "https://flagcdn.com/w80/dz.png", "sep": "vs", "time": "06.28(일) 11:00 (오전)"},
+    "K조": {"t1": "콩고", "f1": "https://flagcdn.com/w80/cd.png", "t2": "우즈베키스탄", "f2": "https://flagcdn.com/w80/uz.png", "sep": "vs", "time": "06.28(일) 08:30 (오전)"},
+    "L조": {"t1": "가나", "f1": "https://flagcdn.com/w80/gh.png", "t2": "크로아티아", "f2": "https://flagcdn.com/w80/hr.png", "sep": "vs", "time": "06.28(일) 06:00 (오전)"},
 }
 
 def load_data():
