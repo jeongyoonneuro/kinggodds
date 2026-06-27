@@ -1,5 +1,5 @@
 {
-    "total_achieved": 0,
+    "total_achieved": 1,
     "scenarios": {
         "D조": {
             "status": "fail",
@@ -24,46 +24,46 @@
         },
         "G조": {
             "status": "fail",
-            "description": "벨기에 승리 + 이집트 승리",
-            "reason": "동반 승리 실패 (벨기에 5:1, 이집트 1:1)",
-            "t1_score": 5,
+            "description": "이집트 승리 (무승부 안됨)",
+            "reason": "조건 미달성 (1:1)",
+            "t1_score": 1,
             "t2_score": 1
         },
         "H조": {
-            "status": "fail",
-            "description": "스페인 승리 + 사우디 승리",
-            "reason": "동반 승리 실패 (스페인 1:0, 사우디 0:0)",
+            "status": "success",
+            "description": "스페인 승리 (무승부 안됨)",
+            "reason": "스페인 승리 (1:0)",
             "t1_score": 1,
             "t2_score": 0
         },
         "I조": {
             "status": "fail",
-            "description": "세네갈 또는 이라크 대승만 아니면 OK",
-            "reason": "대승 발생 (5:0)",
+            "description": "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승",
+            "reason": "조건 미달성 (5:0)",
             "t1_score": 5,
             "t2_score": 0
         },
         "J조": {
             "status": "pending",
-            "description": "오스트리아 승리",
+            "description": "오스트리아 승리 또는 알제리 2점차 이상 승",
             "reason": "오스트리아 vs 알제리 대기 중",
             "t1_score": "",
             "t2_score": ""
         },
         "K조": {
             "status": "pending",
-            "description": "콩고민주공화국, 우즈벡전 무승부 또는 패배",
-            "reason": "콩고민주 vs 우즈벡 대기 중",
+            "description": "무승부 또는 우즈벡 6점차 이하 승리",
+            "reason": "콩고 vs 우즈벡 대기 중",
             "t1_score": "",
             "t2_score": ""
         },
         "L조": {
             "status": "pending",
-            "description": "가나 승리",
+            "description": "가나 승리 (무승부 안됨)",
             "reason": "가나 vs 크로아티아 대기 중",
             "t1_score": "",
             "t2_score": ""
         }
     },
-    "ai_comment": "각 조별 상대팀 매치업 검증 완료. 현재 총 0개의 조건이 달성되었습니다!"
+    "ai_comment": "각 조별 상대팀 매치업 및 디테일 로직 업데이트 완료. 현재 총 1개의 조건이 달성되었습니다!"
 }
