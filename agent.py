@@ -58,6 +58,7 @@ def extract_match_info(raw_data, team1_name, team2_name=None):
                 return {"status": "finished", "team1_score": a_score, "team2_score": h_score}
                 
     return {"status": "pending"}  
+
 def evaluate_scenarios(match_data):
     scenarios = {}
     total_achieved = 0
@@ -72,7 +73,7 @@ def evaluate_scenarios(match_data):
             "t2_score": t2_score
         }
 
-    # 1. D조
+    # 1. D조 (이미지상 '꽝')
     d_match = extract_match_info(match_data, "Australia", "Paraguay")
     t1_s, t2_s = d_match.get("team1_score", ""), d_match.get("team2_score", "")
     if d_match["status"] == "pending":
@@ -87,17 +88,17 @@ def evaluate_scenarios(match_data):
         else:
             add_scenario("D조", "fail", "호주 승리 또는 파라과이 2점차 이상 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 2. E조
+    # 2. E조 (이미지상 '꽝')
     ecu_match = extract_match_info(match_data, "Ecuador", "Germany")
     cur_match = extract_match_info(match_data, "Cura", "Ivory Coast")
     if ecu_match["status"] == "pending" or cur_match["status"] == "pending":
-        add_scenario("E조", "pending", "에콰도르, 퀴라소 승리 X", "독일전 및 코트디부아르전 대기 중")
+        add_scenario("E조", "pending", "에콰도르, 퀴라소 승리 X", "경기 대기 중")
     else:
         t1_s, t2_s = ecu_match["team1_score"], cur_match["team1_score"]
         ecu_win = ecu_match["team1_score"] > ecu_match["team2_score"]
         cur_win = cur_match["team1_score"] > cur_match["team2_score"]
         if not ecu_win and not cur_win:
-            add_scenario("E조", "success", "에콰도르, 퀴라소 승리 X", f"조건 충족 (에콰도르 {ecu_match['team1_score']}:{ecu_match['team2_score']}, 퀴라소 {cur_match['team1_score']}:{cur_match['team2_score']})", t1_s, t2_s)
+            add_scenario("E조", "success", "에콰도르, 퀴라소 승리 X", "조건 충족", t1_s, t2_s)
             total_achieved += 1
         else:
             failed = []
@@ -105,7 +106,7 @@ def evaluate_scenarios(match_data):
             if cur_win: failed.append(f"퀴라소 승({cur_match['team1_score']}:{cur_match['team2_score']})")
             add_scenario("E조", "fail", "에콰도르, 퀴라소 승리 X", f"조건 미달성 [{', '.join(failed)}]", t1_s, t2_s)
 
-    # 3. F조
+    # 3. F조 (이미지상 '꽝')
     f_match = extract_match_info(match_data, "Japan", "Sweden")
     t1_s, t2_s = f_match.get("team1_score", ""), f_match.get("team2_score", "")
     if f_match["status"] == "pending":
@@ -117,89 +118,95 @@ def evaluate_scenarios(match_data):
         else:
             add_scenario("F조", "fail", "일본, 스웨덴에 2골차 이상 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 4. G조
-    bel_match = extract_match_info(match_data, "Belgium", "New Zealand")
-    egy_match = extract_match_info(match_data, "Egypt", "Iran")
-    if bel_match["status"] == "pending" or egy_match["status"] == "pending":
-        add_scenario("G조", "pending", "벨기에 승리 + 이집트 승리", "뉴질랜드전 및 이란전 대기 중")
+    # 4. G조: 이집트 vs 이란 -> 이집트 승리 (무승부 안됨)
+    g_match = extract_match_info(match_data, "Egypt", "Iran")
+    t1_s, t2_s = g_match.get("team1_score", ""), g_match.get("team2_score", "")
+    if g_match["status"] == "pending":
+        add_scenario("G조", "pending", "이집트 승리 (무승부 안됨)", "이집트 vs 이란 대기 중")
     else:
-        t1_s, t2_s = bel_match["team1_score"], egy_match["team1_score"]
-        bel_win = bel_match["team1_score"] > bel_match["team2_score"]
-        egy_win = egy_match["team1_score"] > egy_match["team2_score"]
-        if bel_win and egy_win:
-            add_scenario("G조", "success", "벨기에 승리 + 이집트 승리", f"동반 승리 (벨기에 {bel_match['team1_score']}:{bel_match['team2_score']}, 이집트 {egy_match['team1_score']}:{egy_match['team2_score']})", t1_s, t2_s)
+        if t1_s > t2_s: # 이집트 승리
+            add_scenario("G조", "success", "이집트 승리 (무승부 안됨)", f"이집트 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
             total_achieved += 1
         else:
-            add_scenario("G조", "fail", "벨기에 승리 + 이집트 승리", f"동반 승리 실패 (벨기에 {bel_match['team1_score']}:{bel_match['team2_score']}, 이집트 {egy_match['team1_score']}:{egy_match['team2_score']})", t1_s, t2_s)
+            add_scenario("G조", "fail", "이집트 승리 (무승부 안됨)", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 5. H조
-    esp_match = extract_match_info(match_data, "Spain", "Uruguay")
-    ksa_match = extract_match_info(match_data, "Saudi Arabia", "Cape Verde")
-    if esp_match["status"] == "pending" or ksa_match["status"] == "pending":
-         add_scenario("H조", "pending", "스페인 승리 + 사우디 승리", "우루과이전 및 카보베르데전 대기 중")
+    # 5. H조: 스페인 vs 우루과이 -> 스페인 승리 (무승부 안됨)
+    h_match = extract_match_info(match_data, "Spain", "Uruguay")
+    t1_s, t2_s = h_match.get("team1_score", ""), h_match.get("team2_score", "")
+    if h_match["status"] == "pending":
+         add_scenario("H조", "pending", "스페인 승리 (무승부 안됨)", "스페인 vs 우루과이 대기 중")
     else:
-         t1_s, t2_s = esp_match["team1_score"], ksa_match["team1_score"]
-         esp_win = esp_match["team1_score"] > esp_match["team2_score"]
-         ksa_win = ksa_match["team1_score"] > ksa_match["team2_score"]
-         if esp_win and ksa_win:
-             add_scenario("H조", "success", "스페인 승리 + 사우디 승리", f"동반 승리 (스페인 {esp_match['team1_score']}:{esp_match['team2_score']}, 사우디 {ksa_match['team1_score']}:{ksa_match['team2_score']})", t1_s, t2_s)
+         if t1_s > t2_s: # 스페인 승리
+             add_scenario("H조", "success", "스페인 승리 (무승부 안됨)", f"스페인 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
              total_achieved += 1
          else:
-             add_scenario("H조", "fail", "스페인 승리 + 사우디 승리", f"동반 승리 실패 (스페인 {esp_match['team1_score']}:{esp_match['team2_score']}, 사우디 {ksa_match['team1_score']}:{ksa_match['team2_score']})", t1_s, t2_s)
+             add_scenario("H조", "fail", "스페인 승리 (무승부 안됨)", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 6. I조
+    # 6. I조: 세네갈 vs 이라크 -> 무승부 OR 세네갈 1점차 승 OR 이라크 4점차 이하 승
     i_match = extract_match_info(match_data, "Senegal", "Iraq")
     t1_s, t2_s = i_match.get("team1_score", ""), i_match.get("team2_score", "")
     if i_match["status"] == "pending":
-        add_scenario("I조", "pending", "세네갈 또는 이라크 대승만 아니면 OK", "세네갈 vs 이라크 대기 중")
+        add_scenario("I조", "pending", "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승", "세네갈 vs 이라크 대기 중")
     else:
-        if abs(t1_s - t2_s) <= 2:
-            add_scenario("I조", "success", "세네갈 또는 이라크 대승만 아니면 OK", f"대승 방어 성공 ({t1_s}:{t2_s})", t1_s, t2_s)
+        if t1_s == t2_s: # 무승부
+            add_scenario("I조", "success", "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승", f"무승부 충족 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        elif (t1_s - t2_s) == 1: # 세네갈 1점차 승리
+            add_scenario("I조", "success", "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승", f"세네갈 1점차 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        elif 0 < (t2_s - t1_s) <= 4: # 이라크 1~4점차 승리
+            add_scenario("I조", "success", "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승", f"이라크 4점차 이하 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
             total_achieved += 1
         else:
-            add_scenario("I조", "fail", "세네갈 또는 이라크 대승만 아니면 OK", f"대승 발생 ({t1_s}:{t2_s})", t1_s, t2_s)
+            add_scenario("I조", "fail", "무승부, 세네갈 1점차 승, 이라크 4점차 이하 승", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 7. J조
+    # 7. J조: 오스트리아 vs 알제리 -> 오스트리아 승리 OR 알제리 2점차 이상 승리
     j_match = extract_match_info(match_data, "Austria", "Algeria")
     t1_s, t2_s = j_match.get("team1_score", ""), j_match.get("team2_score", "")
     if j_match["status"] == "pending":
-        add_scenario("J조", "pending", "오스트리아 승리", "오스트리아 vs 알제리 대기 중")
+        add_scenario("J조", "pending", "오스트리아 승리 또는 알제리 2점차 이상 승", "오스트리아 vs 알제리 대기 중")
     else:
-        if t1_s > t2_s:
-            add_scenario("J조", "success", "오스트리아 승리", f"오스트리아 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+        if t1_s > t2_s: # 오스트리아 승리
+            add_scenario("J조", "success", "오스트리아 승리 또는 알제리 2점차 이상 승", f"오스트리아 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+            total_achieved += 1
+        elif (t2_s - t1_s) >= 2: # 알제리 2점차 이상 승리
+            add_scenario("J조", "success", "오스트리아 승리 또는 알제리 2점차 이상 승", f"알제리 2점차 이상 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
             total_achieved += 1
         else:
-            add_scenario("J조", "fail", "오스트리아 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+            add_scenario("J조", "fail", "오스트리아 승리 또는 알제리 2점차 이상 승", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 8. K조
+    # 8. K조: 콩고 vs 우즈베키스탄 -> 무승부 OR 우즈베키스탄 승리 (6점차 이하)
     k_match = extract_match_info(match_data, "Congo", "Uzbekistan")
     t1_s, t2_s = k_match.get("team1_score", ""), k_match.get("team2_score", "")
     if k_match["status"] == "pending":
-         add_scenario("K조", "pending", "콩고민주공화국, 우즈벡전 무승부 또는 패배", "콩고민주 vs 우즈벡 대기 중")
+         add_scenario("K조", "pending", "무승부 또는 우즈벡 6점차 이하 승리", "콩고 vs 우즈벡 대기 중")
     else:
-         if t1_s <= t2_s:
-             add_scenario("K조", "success", "콩고민주공화국, 우즈벡전 무승부 또는 패배", f"조건 충족 ({t1_s}:{t2_s})", t1_s, t2_s)
+         if t1_s == t2_s: # 무승부
+             add_scenario("K조", "success", "무승부 또는 우즈벡 6점차 이하 승리", f"무승부 충족 ({t1_s}:{t2_s})", t1_s, t2_s)
+             total_achieved += 1
+         elif 0 < (t2_s - t1_s) <= 6: # 우즈베키스탄 1~6점차 승리
+             add_scenario("K조", "success", "무승부 또는 우즈벡 6점차 이하 승리", f"우즈벡 6점차 이하 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
              total_achieved += 1
          else:
-             add_scenario("K조", "fail", "콩고민주공화국, 우즈벡전 무승부 또는 패배", f"콩고 승리 발생 ({t1_s}:{t2_s})", t1_s, t2_s)
+             add_scenario("K조", "fail", "무승부 또는 우즈벡 6점차 이하 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
-    # 9. L조
+    # 9. L조: 가나 vs 크로아티아 -> 가나 승리 (무승부 안됨)
     l_match = extract_match_info(match_data, "Ghana", "Croatia")
     t1_s, t2_s = l_match.get("team1_score", ""), l_match.get("team2_score", "")
     if l_match["status"] == "pending":
-         add_scenario("L조", "pending", "가나 승리", "가나 vs 크로아티아 대기 중")
+         add_scenario("L조", "pending", "가나 승리 (무승부 안됨)", "가나 vs 크로아티아 대기 중")
     else:
          if t1_s > t2_s:
-             add_scenario("L조", "success", "가나 승리", f"가나 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
+             add_scenario("L조", "success", "가나 승리 (무승부 안됨)", f"가나 승리 ({t1_s}:{t2_s})", t1_s, t2_s)
              total_achieved += 1
          else:
-             add_scenario("L조", "fail", "가나 승리", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
+             add_scenario("L조", "fail", "가나 승리 (무승부 안됨)", f"조건 미달성 ({t1_s}:{t2_s})", t1_s, t2_s)
 
     return {
         "total_achieved": total_achieved,
         "scenarios": scenarios,
-        "ai_comment": f"각 조별 상대팀 매치업 검증 완료. 현재 총 {total_achieved}개의 조건이 달성되었습니다!"
-    }
+        "ai_comment": f"각 조별 상대팀 매치업 및 디테일 로직 업데이트 완료. 현재 총 {total_achieved}개의 조건이 달성되었습니다!"
+                  }
 
 def main():
     print("⚽ [1/3] API 경기 결과 수집 중...")
