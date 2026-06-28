@@ -51,11 +51,11 @@
             "t2_score": ""
         },
         "K조": {
-            "status": "pending",
+            "status": "fail",
             "description": "무승부 또는 우즈벡 6점차 이하 승리",
-            "reason": "콩고 vs 우즈벡 대기 중",
-            "t1_score": "",
-            "t2_score": ""
+            "reason": "조건 미달성 (3:1)",
+            "t1_score": 3,
+            "t2_score": 1
         },
         "L조": {
             "status": "fail",
