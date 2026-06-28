@@ -44,11 +44,11 @@
             "t2_score": 0
         },
         "J조": {
-            "status": "pending",
+            "status": "fail",
             "description": "오스트리아 승리 또는 알제리 2점차 이상 승",
-            "reason": "오스트리아 vs 알제리 대기 중",
-            "t1_score": "",
-            "t2_score": ""
+            "reason": "조건 미달성 (3:3)",
+            "t1_score": 3,
+            "t2_score": 3
         },
         "K조": {
             "status": "fail",
