@@ -4,9 +4,37 @@ import os
 
 st.set_page_config(page_title="한국 32강 경우의 수 대시보드", page_icon="🇰🇷", layout="wide")
 
-# CSS: 모바일 반응형 및 대시보드 디자인
+# CSS: 모바일 반응형 및 대시보드 디자인 (탈락 배너 스타일 추가)
 st.markdown("""
 <style>
+    /* 상단 상태 배너 */
+    .status-banner {
+        padding: 30px;
+        border-radius: 16px;
+        text-align: center;
+        font-size: 45px;
+        font-weight: 900;
+        margin-bottom: 25px;
+        color: white;
+        letter-spacing: -1px;
+    }
+    .banner-fail {
+        background-color: #dc3545;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    }
+    .banner-success {
+        background-color: #28a745;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+    .status-subtitle {
+        font-size: 24px;
+        font-weight: normal;
+        opacity: 0.9;
+        margin-top: 10px;
+        display: block;
+    }
+
+    /* 그리드 및 카드 디자인 */
     .dashboard-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -54,6 +82,8 @@ st.markdown("""
     div[data-testid="stMetricValue"] { font-size: 50px; font-weight: 900; }
 
     @media (max-width: 768px) {
+        .status-banner { font-size: 26px; padding: 20px; }
+        .status-subtitle { font-size: 14px; margin-top: 5px; }
         .dashboard-grid { gap: 8px; }
         .scenario-card { padding: 15px 5px; min-height: 180px; border-width: 2px; border-radius: 10px; }
         .flags-container { gap: 5px; margin: 10px 0 15px 0; }
@@ -69,14 +99,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 한국 시각 기준 경기 일정을 'time' 항목에 추가했습니다.
-# 한국 시각 기준 경기 일정을 'time' 항목에 추가했습니다.
 GROUP_INFO = {
     "D조": {"t1": "호주", "f1": "https://flagcdn.com/w80/au.png", "t2": "파라과이", "f2": "https://flagcdn.com/w80/py.png", "sep": "vs", "time": "6.26(금) 완료"},
     "E조": {"t1": "에콰도르", "f1": "https://flagcdn.com/w80/ec.png", "t2": "퀴라소", "f2": "https://flagcdn.com/w80/cw.png", "sep": "+", "time": "6.26(금) 완료"},
     "F조": {"t1": "일본", "f1": "https://flagcdn.com/w80/jp.png", "t2": "스웨덴", "f2": "https://flagcdn.com/w80/se.png", "sep": "vs", "time": "6.26(금) 완료"},
-    
-    # 여기서부터 이미지에 맞춰 대진표와 시간이 수정되었습니다!
     "G조": {"t1": "이집트", "f1": "https://flagcdn.com/w80/eg.png", "t2": "이란", "f2": "https://flagcdn.com/w80/ir.png", "sep": "vs", "time": "06.27(토) 12:00 (새벽)"},
     "H조": {"t1": "스페인", "f1": "https://flagcdn.com/w80/es.png", "t2": "우루과이", "f2": "https://flagcdn.com/w80/uy.png", "sep": "vs", "time": "06.27(토) 09:00 (오전)"},
     "I조": {"t1": "세네갈", "f1": "https://flagcdn.com/w80/sn.png", "t2": "이라크", "f2": "https://flagcdn.com/w80/iq.png", "sep": "vs", "time": "06.27(토) 04:00 (오전)"},
@@ -94,29 +120,63 @@ def load_data():
 
 def main():
     st.title("🇰🇷 한국 32강 경우의 수 총 정리")
-    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 32강 진출!")
+    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 무조건 한국 32강 진출!")
     data = load_data()
 
     if not data:
         st.warning("아직 수집된 경기 결과가 없습니다. 업데이트를 기다려주세요.")
         return
 
-    # 상단 요약 대시보드
+    scenarios = data.get("scenarios", {})
+    groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
     total_achieved = data.get("total_achieved", 0)
+
+    # 🚨 탈락/진출 확정 계산 로직
+    # 이미 경기가 끝난(success 또는 fail) 조의 개수를 셉니다.
+    finished_count = sum(1 for group in groups if scenarios.get(group, {}).get("status") in ["success", "fail"])
+    remaining_count = 9 - finished_count
+    max_possible_achieved = total_achieved + remaining_count # 앞으로 남은 경기를 다 맞춰도 얻을 수 있는 최대 개수
+
+    # 화면 최상단 상태 배너 렌더링
+    if total_achieved >= 3:
+        banner_html = '''
+        <div class="status-banner banner-success">
+            🎉 대한민국 32강 진출 확정! 🎉
+            <span class="status-subtitle">기적이 일어났습니다! 경우의 수 3개 달성 완료!</span>
+        </div>
+        '''
+        st.markdown(banner_html, unsafe_allow_html=True)
+    elif max_possible_achieved < 3:
+        banner_html = '''
+        <div class="status-banner banner-fail">
+            😭 대한민국 32강 진출 좌절 (탈락 확정) 😭
+            <span class="status-subtitle">남은 경기 결과와 상관없이 경우의 수가 소멸되었습니다.</span>
+        </div>
+        '''
+        st.markdown(banner_html, unsafe_allow_html=True)
+
+    # 상단 요약 대시보드
     progress_value = min(total_achieved / 3.0, 1.0)
     
     col1, col2 = st.columns([1, 2])
     with col1:
-        st.metric(label="현재 달성된 경우의 수", value=f"{total_achieved} 개", delta=f"{3 - total_achieved}개 남음!" if total_achieved < 3 else "진출 확정!", delta_color="normal")
+        if max_possible_achieved < 3:
+            delta_text = "- 탈락 확정"
+            delta_color = "normal" # 마이너스 기호가 들어가면 빨간색 화살표로 렌더링됨
+        elif total_achieved >= 3:
+            delta_text = "진출 확정!"
+            delta_color = "normal"
+        else:
+            delta_text = f"{3 - total_achieved}개 남음!"
+            delta_color = "normal"
+            
+        st.metric(label="현재 달성된 경우의 수", value=f"{total_achieved} 개", delta=delta_text, delta_color=delta_color)
     with col2:
         st.write("진출 달성률")
         st.progress(progress_value)
 
     st.info(f"**🤖 상태 코멘트:** {data.get('ai_comment', '파이썬 로직 계산 완료.')}")
     st.markdown("---")
-
-    scenarios = data.get("scenarios", {})
-    groups = ["D조", "E조", "F조", "G조", "H조", "I조", "J조", "K조", "L조"]
 
     grid_html = '<div class="dashboard-grid">'
 
@@ -127,7 +187,7 @@ def main():
         
         g_info = GROUP_INFO[group]
 
-        # 🚨 [추가된 로직] 대기 중(pending)이면 백엔드 데이터 대신 일정을 덮어씌웁니다.
+        # 대기 중(pending)이면 일정을 덮어씌움
         if status == "pending":
             reason = f"⏳ {g_info['time']} 예정"
         else:
