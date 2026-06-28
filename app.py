@@ -119,8 +119,8 @@ def load_data():
         return json.load(f)
 
 def main():
-    st.title("🇰🇷 한국 32강 경우의 수 총 정리")
-    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 무조건 한국 32강 진출!")
+    st.title("킹갓우의 수")
+    st.markdown("### 9가지 조별 시나리오 중 **3개**만 맞으면 한국 32강 진출!")
     data = load_data()
 
     if not data:
